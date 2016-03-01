@@ -1,0 +1,195 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8"/>
+    <title></title>
+    <script src="Minesweeper.js"></script>
+    <style>
+
+        .closed_cell {
+            width: 2em;
+            height: 2em;
+            line-height: 2em;
+            vertical-align: middle;
+            text-align: center;
+            text-decoration: none;
+            color: #000;
+            outline: 1px solid #ddd;
+            background: #eee;
+            cursor: pointer;
+        }
+
+        .closed_cell:hover {
+            background: #dcdcdc linear-gradient(#eee, #ddd);
+        }
+
+
+
+        .opened_cell {
+            width: 2em;
+            height: 2em;
+            line-height: 2em;
+            vertical-align: middle;
+            text-align: center;
+            text-decoration: none;
+            color: #000;
+            outline: 1px solid #ddd;
+            background: #fff;
+            font-family: Arial;
+            font-weight: bold;
+        }
+        .detonated_cell {
+            width: 2em;
+            height: 2em;
+            line-height: 2em;
+            vertical-align: middle;
+            text-align: center;
+            text-decoration: none;
+            color: #000;
+            outline: 1px solid #ddd;
+            background: #fff;
+            background-image: url(content/images/bang24.png);
+            background-repeat: no-repeat;
+            -moz-background-position-x: center;
+            -o-background-position-x: center;
+            background-position-x: center;
+            -moz-background-position-y: center;
+            -o-background-position-y: center;
+            background-position-y: center;
+        }
+
+        .defused_cell {
+            width: 2em;
+            height: 2em;
+            line-height: 2em;
+            vertical-align: middle;
+            text-align: center;
+            text-decoration: none;
+            color: #000;
+            outline: 1px solid #ddd;
+            background: #fff;
+            background-image: url(content/images/bomb24.png);
+            background-repeat: no-repeat;
+            -moz-background-position-x: center;
+            -o-background-position-x: center;
+            background-position-x: center;
+            -moz-background-position-y: center;
+            -o-background-position-y: center;
+            background-position-y: center;
+
+        }
+
+        .marked_cell {
+            width: 2em;
+            height: 2em;
+            line-height: 2em;
+            vertical-align: middle;
+            text-align: center;
+            text-decoration: none;
+            color: #000;
+            outline: 1px solid #ddd;
+            background: #eee;
+            cursor: pointer;
+            background-image: url(content/images/flag24.png);
+            background-repeat: no-repeat;
+            -moz-background-position-x: center;
+            -o-background-position-x: center;
+            background-position-x: center;
+            -moz-background-position-y: center;
+            -o-background-position-y: center;
+            background-position-y: center;
+
+        }
+
+        .marked_cell:hover {
+            background: #dcdcdc linear-gradient(#eee, #ddd);
+            background-image: url(content/images/flag24.png);
+            background-repeat: no-repeat;
+            -moz-background-position-x: center;
+            -o-background-position-x: center;
+            background-position-x: center;
+            -moz-background-position-y: center;
+            -o-background-position-y: center;
+            background-position-y: center;
+
+
+        }
+
+        table {
+            width: auto;
+        }
+
+    </style>
+    <script>
+        'use strict';
+        var minesweeper = new Minesweeper(10, 10);
+        minesweeper.onCellStateChanged = function (x, y, data) {
+            var cell = document.getElementById("cellX" + x + 'Y' + y);
+
+            switch (data.state) {
+                case cellState.OPENED:
+                    cell.className = 'opened_cell';
+                    if (data.numberBombs)
+                        cell.textContent = data.numberBombs;
+                    break;
+                case cellState.DEFUSED:
+                    cell.className = 'defused_cell';
+                    break;
+                case cellState.DETONATED:
+                    cell.className = 'detonated_cell';
+                    break;
+                case cellState.CLOSED:
+                    cell.className = 'closed_cell';
+                    break;
+                case cellState.MARKED_AS_BOMB:
+                    cell.className = 'marked_cell';
+                    break;
+
+                default:
+            }
+
+        };
+
+        function callFuncAndReturnFalse(func) {
+            func();
+            return false;
+        }
+
+        function generateTable(parent, size) {
+
+            var table = document.createElement('table');
+
+            for (var i = 0; i < size; i++) {
+
+                var row = table.insertRow();
+
+                for (var j = 0; j < size; j++) {
+
+                    var cell = row.insertCell();
+
+                    cell.id = "cellX" + i + 'Y' + j;
+                    cell.className = "closed_cell";
+                    cell.onclick = Minesweeper.prototype.openCell.bind(minesweeper, i, j);
+                    // Event action shoud return false for disabling the context menu.
+                    cell.oncontextmenu = callFuncAndReturnFalse.bind(null, Minesweeper.prototype.invertCellBombMark.bind(minesweeper, i, j));
+                }
+            }
+
+            parent.appendChild(table);
+        }
+    </script>
+</head>
+<body>
+<div id="minesweeperContainer">
+    
+</div>
+
+<script>
+    generateTable(document.getElementById('minesweeperContainer'), 10);
+    //generateTable(document.body, 100);
+</script>
+
+</body>
+</html>
+
