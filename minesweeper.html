@@ -128,27 +128,26 @@
             var cell = document.getElementById("cellX" + x + 'Y' + y);
 
             switch (data.state) {
-                case cellState.OPENED:
+                case CellState.OPENED:
                     cell.className = 'opened_cell';
                     if (data.numberBombs)
                         cell.textContent = data.numberBombs;
                     break;
-                case cellState.DEFUSED:
+                case CellState.DEFUSED:
                     cell.className = 'defused_cell';
                     break;
-                case cellState.DETONATED:
+                case CellState.DETONATED:
                     cell.className = 'detonated_cell';
                     break;
-                case cellState.CLOSED:
+                case CellState.CLOSED:
                     cell.className = 'closed_cell';
                     break;
-                case cellState.MARKED_AS_BOMB:
+                case CellState.MARKED_AS_BOMB:
                     cell.className = 'marked_cell';
                     break;
 
                 default:
             }
-
         };
 
         function callFuncAndReturnFalse(func) {
@@ -156,7 +155,7 @@
             return false;
         }
 
-        function generateTable(parent, size) {
+        function generateGameField(parent, size) {
 
             var table = document.createElement('table');
 
@@ -171,8 +170,8 @@
                     cell.id = "cellX" + i + 'Y' + j;
                     cell.className = "closed_cell";
                     cell.onclick = Minesweeper.prototype.openCell.bind(minesweeper, i, j);
-                    // Event action shoud return false for disabling the context menu.
-                    cell.oncontextmenu = callFuncAndReturnFalse.bind(null, Minesweeper.prototype.invertCellBombMark.bind(minesweeper, i, j));
+                    // Event action should return False for disabling the context menu.
+                    cell.oncontextmenu = callFuncAndReturnFalse.bind(null, Minesweeper.prototype.toggleCellBombMark.bind(minesweeper, i, j));
                 }
             }
 
@@ -181,13 +180,10 @@
     </script>
 </head>
 <body>
-<div id="minesweeperContainer">
-    
-</div>
+<div id="minesweeperContainer"></div>
 
 <script>
-    generateTable(document.getElementById('minesweeperContainer'), 10);
-    //generateTable(document.body, 100);
+    generateGameField(document.getElementById('minesweeperContainer'), 10);
 </script>
 
 </body>
