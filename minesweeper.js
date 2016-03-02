@@ -121,7 +121,9 @@ function Minesweeper(fieldSize, bombNumber) {
     for (var i = 0; i < this._fieldSize; i++) {
         this._gameField[i] = new Array(this._fieldSize);
         for (var j = 0; j < this._fieldSize; j++) {
-            this._gameField[i][j] = new Cell();
+            var cell = new Cell();
+            cell._position = { x: i, y: i };
+            this._gameField[i][j] = cell;
         }
     }
 
@@ -137,7 +139,7 @@ Minesweeper.prototype._forEachCell = function (func) {
 
     for (var i = 0; i < this._fieldSize; i++) {
         for (var j = 0; j < this._fieldSize; j++) {
-            var canBeStopped = func.call(this, i, j);
+            var canBeStopped = func.call(this, this._gameField[i][j], i, j);
             if (canBeStopped) {
                 return;
             }
@@ -177,8 +179,8 @@ Minesweeper.prototype.openCell = function (x, y) {
         if (cell.state === CellState.DETONATED) {
             // Cell is bomb: Open all cells, detonate all bombs. A player is LooOoOooOseEeEeer!
             this._forEachCell(
-                function(i, j) {
-                    if (this._gameField[i][j].openOrDetonate()) {
+                function(cell, i, j) {
+                    if (cell.openOrDetonate()) {
                         this.notifyCellStateChanged(i, j);
                     }
                 });
@@ -198,8 +200,7 @@ Minesweeper.prototype.openCell = function (x, y) {
             var win = true;
 
             this._forEachCell (
-                function (i, j) {
-                    var cell = this._gameField[i][j];
+                function (cell, i, j) {
                     if (cell.state === CellState.CLOSED || (cell.state === CellState.MARKED_AS_BOMB && !cell.isBomb)) {
                         win = false;
                         return true;
@@ -209,8 +210,8 @@ Minesweeper.prototype.openCell = function (x, y) {
 
             if (win) {
                 this._forEachCell (
-                    function(i, j) {
-                        if (this._gameField[i][j].openOrDefuse()) {
+                    function(cell, i, j) {
+                        if (cell.openOrDefuse()) {
                             this.notifyCellStateChanged(i, j);
                         }
                     });
@@ -276,8 +277,8 @@ Minesweeper.prototype._resetGameField = function (resetCells) {
     if (resetCells) {
         // Reset all cells on the game field.
         this._forEachCell(
-            function (i, j) {
-                if (this._gameField[i][j].reset()) {
+            function (cell, i, j) {
+                if (cell.reset()) {
                     this.notifyCellStateChanged(i, j);
                 }
             });
