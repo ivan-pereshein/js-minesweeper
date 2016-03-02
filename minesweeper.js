@@ -137,7 +137,10 @@ Minesweeper.prototype._forEachCell = function (func) {
 
     for (var i = 0; i < this._fieldSize; i++) {
         for (var j = 0; j < this._fieldSize; j++) {
-            func.call(this, i, j);
+            var canBeStopped = func.call(this, i, j);
+            if (canBeStopped) {
+                return;
+            }
         }
     }
 }
@@ -146,7 +149,10 @@ Minesweeper.prototype._forEachAdjacentCell = function (func, x, y) {
 
     for (var i = Math.max(x - 1, 0) ; i <= Math.min(x + 1, this._fieldSize - 1) ; i++) {
         for (var j = Math.max(y - 1, 0) ; j <= Math.min(y + 1, this._fieldSize - 1) ; j++) {
-            func.call(this, i, j);
+            var canBeStopped = func.call(this, i, j);
+            if (canBeStopped) {
+                return;
+            }
         }
     }
 }
@@ -190,23 +196,25 @@ Minesweeper.prototype.openCell = function (x, y) {
             // Check whether there are closed cells or cells which mistakenly marked as bomb, if no, set all bombs as DEFUSED. A user won :(...
             // this.state = GameState.LOSING;
             var win = true;
-            for (var i = 0; i < this._fieldSize; i++) {
-                for (var j = 0; j < this._fieldSize; j++) {
+
+            this._forEachCell (
+                function (i, j) {
                     var cell = this._gameField[i][j];
                     if (cell.state === CellState.CLOSED || (cell.state === CellState.MARKED_AS_BOMB && !cell.isBomb)) {
                         win = false;
+                        return true;
                     }
-                }
-            }
+                    return false;
+                } );
 
             if (win) {
-                for (var i = 0; i < this._fieldSize; i++) {
-                    for (var j = 0; j < this._fieldSize; j++) {
+                this._forEachCell (
+                    function(i, j) {
                         if (this._gameField[i][j].openOrDefuse()) {
                             this.notifyCellStateChanged(i, j);
                         }
-                    }
-                }
+                    });
+
                 this.state = GameState.WIN;
             }
 
@@ -263,17 +271,16 @@ Minesweeper.prototype.getCellData = function (x, y) {
 /*
  * Resets all cells and tries to set all bombs.
  */
-Minesweeper.prototype._resetGameField = function (clearCells) {
+Minesweeper.prototype._resetGameField = function (resetCells) {
 
-    if (clearCells) {
+    if (resetCells) {
         // Reset all cells on the game field.
-        for (var i = 0; i < this._fieldSize; i++) {
-            for (var j = 0; j < this._fieldSize; j++) {
+        this._forEachCell(
+            function (i, j) {
                 if (this._gameField[i][j].reset()) {
                     this.notifyCellStateChanged(i, j);
                 }
-            }
-        }
+            });
     }
 
     // Number of bombs which already set.
@@ -291,16 +298,13 @@ Minesweeper.prototype._resetGameField = function (clearCells) {
         var x = Math.floor(Math.random() * this._fieldSize);
         var y = Math.floor(Math.random() * this._fieldSize);
         var bombCanBePutHere = true;
-
-        // Check all adjacent cells around a (x, y) cell. We cannot set a bomb if one of adjacent cells has an installed bomb.
-        for (var i = Math.max(x - 1, 0) ; i <= Math.min(x + 1, this._fieldSize - 1) ; i++) {
-            for (var j = Math.max(y - 1, 0) ; j <= Math.min(y + 1, this._fieldSize - 1) ; j++) {
+        this._forEachAdjacentCell(
+            function(i, j) {
                 if (this._gameField[i][j].isBomb) {
                     bombCanBePutHere = false;
-                    break;
+                    return true;
                 }
-            }
-        }
+            });
 
         if (bombCanBePutHere) {
             this._gameField[x][y].isBomb = true;
@@ -315,12 +319,13 @@ Minesweeper.prototype._getNumberAdjacentBombs = function (x, y)
 {
     // Assert(!_gameField[x][y].isBomb)
     var number = 0;
-    for (var i = Math.max(x - 1, 0) ; i <= Math.min(x + 1, this._fieldSize - 1) ; i++) {
-        for (var j = Math.max(y - 1, 0) ; j <= Math.min(y + 1, this._fieldSize - 1) ; j++) {
+
+    this._forEachAdjacentCell(
+        function (i, j) {
             if (this._gameField[i][j].isBomb) {
                 number++;
             }
-        }
-    }
+        }, x, y);
+    
     return number;
 }
