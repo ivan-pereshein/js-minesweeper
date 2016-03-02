@@ -2,11 +2,10 @@
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="utf-8"/>
+    <meta charset="utf-8" />
     <title></title>
     <script src="Minesweeper.js"></script>
     <style>
-
         .closed_cell {
             width: 2em;
             height: 2em;
@@ -20,11 +19,9 @@
             cursor: pointer;
         }
 
-        .closed_cell:hover {
-            background: #dcdcdc linear-gradient(#eee, #ddd);
-        }
-
-
+            .closed_cell:hover {
+                background: #dcdcdc linear-gradient(#eee, #ddd);
+            }
 
         .opened_cell {
             width: 2em;
@@ -39,6 +36,7 @@
             font-family: Arial;
             font-weight: bold;
         }
+
         .detonated_cell {
             width: 2em;
             height: 2em;
@@ -77,7 +75,6 @@
             -moz-background-position-y: center;
             -o-background-position-y: center;
             background-position-y: center;
-
         }
 
         .marked_cell {
@@ -99,32 +96,45 @@
             -moz-background-position-y: center;
             -o-background-position-y: center;
             background-position-y: center;
-
         }
 
         .marked_cell:hover {
-            background: #dcdcdc linear-gradient(#eee, #ddd);
-            background-image: url(content/images/flag24.png);
-            background-repeat: no-repeat;
-            -moz-background-position-x: center;
-            -o-background-position-x: center;
-            background-position-x: center;
-            -moz-background-position-y: center;
-            -o-background-position-y: center;
-            background-position-y: center;
+                background: #dcdcdc linear-gradient(#eee, #ddd);
+                background-image: url(content/images/flag24.png);
+                background-repeat: no-repeat;
+                -moz-background-position-x: center;
+                -o-background-position-x: center;
+                background-position-x: center;
+                -moz-background-position-y: center;
+                -o-background-position-y: center;
+                background-position-y: center;
+            }
 
-
+        #mainContainer {
+            outline: 3px solid #eee;
+            padding: 0 10px 5px 10px
         }
 
-        table {
-            width: auto;
+        #controlsContainer {
+            padding: 5px 0 5px 0;
         }
 
+        .outer {
+            width: 100%;
+            text-align: center;
+        }
+
+        .inner {
+            display: inline-block;
+            text-align: left;
+        }
     </style>
     <script>
         'use strict';
-        var minesweeper = new Minesweeper(10, 10);
-        minesweeper.onCellStateChanged = function (x, y, data) {
+
+        var minesweeper = null;
+
+        function CellStateChanged(x, y, data) {
             var cell = document.getElementById("cellX" + x + 'Y' + y);
 
             switch (data.state) {
@@ -141,6 +151,7 @@
                     break;
                 case CellState.CLOSED:
                     cell.className = 'closed_cell';
+                    cell.textContent = '';
                     break;
                 case CellState.MARKED_AS_BOMB:
                     cell.className = 'marked_cell';
@@ -155,7 +166,7 @@
             return false;
         }
 
-        function generateGameField(parent, size) {
+        function generateGameField(minesweeper, parent, size) {
 
             var table = document.createElement('table');
 
@@ -177,15 +188,34 @@
 
             parent.appendChild(table);
         }
+
+        function newGame() {
+            var e = document.getElementById("sizeSelector");
+            var params = e.options[e.selectedIndex].value.split(';');
+            var fieldSize = +params[0];
+            var bombNumber = +params[1];
+            minesweeper = new Minesweeper(fieldSize, bombNumber);
+            minesweeper.onCellStateChanged = CellStateChanged;
+            var container = document.getElementById('minesweeper');
+            container.innerHTML = "";
+            generateGameField(minesweeper, container, fieldSize);
+        }
     </script>
 </head>
-<body>
-<div id="minesweeperContainer"></div>
+<body onload="newGame()">
 
-<script>
-    generateGameField(document.getElementById('minesweeperContainer'), 10);
-</script>
-
+    <div class="outer">
+        <div id="mainContainer" class="inner">
+            <div id="controlsContainer">
+                <select id="sizeSelector" onchange="newGame();">
+                    <option value="10;10" selected>Small size</option>
+                    <option value="20;40">Middle size</option>
+                    <option value="30;100">Big size</option>
+                </select>
+                <input type="button" value="Restart" onclick="minesweeper.restartGame();"/>
+            </div>
+            <div id="minesweeper" class="inner"></div>
+        </div>
+    </div>
 </body>
 </html>
-

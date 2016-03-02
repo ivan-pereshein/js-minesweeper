@@ -12,7 +12,7 @@ var GameState = {
     READY: 0,
     RUNNING: 1,
     WIN: 2,
-    LOSING: 3
+    LOSS: 3
 };
 
 /*
@@ -114,25 +114,137 @@ Cell.prototype._openOrDoOtherIfBomb = function (otherState) {
 function Minesweeper(fieldSize, bombNumber) {
     this._fieldSize = fieldSize;
     this._bombNumber = bombNumber;
-    this.state = GameState.READY;
 
-    // Initialize the game field.
     this._gameField = new Array(this._fieldSize);
+
     for (var i = 0; i < this._fieldSize; i++) {
         this._gameField[i] = new Array(this._fieldSize);
-        for (var j = 0; j < this._fieldSize; j++) {
-            var cell = new Cell();
-            cell._position = { x: i, y: i };
-            this._gameField[i][j] = cell;
-        }
     }
 
-    this._resetGameField(false);
+    this._resetGameField();
+}
+
+/*
+ * Opens cell at specified position.
+ * @param {number} x
+ * @param {number} y
+ */
+Minesweeper.prototype.openCell = function (x, y) {
+
+    if (!this._startGameIfNeeded())
+        return;
+
+    this._openCell(this._gameField[x][y]);
+    this._setWinIfNeeded();
+}
+
+/*
+ * Switches a bomb mark on a cell at specified position.
+ * @param {number} x
+ * @param {number} y
+ */
+Minesweeper.prototype.toggleCellBombMark = function (x, y) {
+
+    if (!this._startGameIfNeeded())
+        return;
+
+    var cell = this._gameField[x][y];
+    var stateChanged = cell.toggleBombMark();
+
+    if (stateChanged) {
+        this._notifyCellStateChanged(cell);
+        this._setWinIfNeeded();
+    }
 }
 
 Minesweeper.prototype.restartGame = function () {
-    _resetGameField(true);
-    this.state = GameState.READY;
+    this._resetGameField();
+}
+
+/*
+ * Resets all cells and tries to set all bombs.
+ */
+Minesweeper.prototype._resetGameField = function () {
+
+    // Reset all cells on the game field.
+    this._forEachCell(
+        function (paramCell, i, j) {
+            if (paramCell) {
+                if (paramCell.reset()) {
+                    this._notifyCellStateChanged(paramCell);
+                }
+            } else {
+                var cell = new Cell();
+                cell._position = { x: i, y: j };
+                this._gameField[i][j] = cell;
+            }
+        });
+
+    // Number of bombs which already set.
+    var numberPutBombs = 0;
+
+    // Admissible-Number-Of-Failed-Attempts-To-Put-All-Bombs is the simpliest way to prevent an infinity loop 
+    // due to discrepancy of the game field size and number of bombs which need to be set.
+    // If the code will have to make more attempts to set all bombs than specified number, 
+    // we can assume that it is impossible to set so many bombs on this small game field.
+    // This way is not absolutly correct, but it may not set all bombs only for mindless, not playable values of the game field size and number of bombs.
+    var admissibleNumberFailedAttemptsToPutBomb = this._fieldSize * this._fieldSize;
+
+    while (numberPutBombs < this._bombNumber && admissibleNumberFailedAttemptsToPutBomb) {
+        // Generate random positions (x, y) for a next bomb on the game field.
+        var x = Math.floor(Math.random() * this._fieldSize);
+        var y = Math.floor(Math.random() * this._fieldSize);
+
+        var bombCanBePutHere = true;
+
+        var selectedCell = this._gameField[x][y];
+
+        // Check bombs in adjacent cells. Bombs cannot be put in adjacent cells.
+        this._forEachAdjacentCell(
+            function (adjacentCell) {
+                if (adjacentCell.isBomb) {
+                    // Bomb is found in an adjacent cell. So, new bomb cannot be put in the selected cell.
+                    bombCanBePutHere = false;
+                    // No sense to continue the search.
+                    return true;
+                }
+            }, selectedCell);
+
+        if (bombCanBePutHere) {
+            selectedCell.isBomb = true;
+            numberPutBombs++;
+        } else {
+            admissibleNumberFailedAttemptsToPutBomb--;
+        }
+    }
+
+    this._setGameState(GameState.READY);
+}
+
+Minesweeper.prototype._openCell = function (cell) {
+
+    var stateChanged = cell.openOrDetonate();
+
+    if (stateChanged) {
+
+        this._notifyCellStateChanged(cell);
+
+        if (cell.state === CellState.DETONATED) {
+            // There is a bomb in this cell and a bomb is detonated. The game is lost.
+            this._setLoss();
+        } else {
+            // Assert(cell.state === CellState.OPENED)
+
+            // If there is not a bomb around this cell, open all adjacent cells.
+            if (!this._getNumberAdjacentBombs(cell)) {
+                this._forEachAdjacentCell(
+                    function (adjacentCell) {
+                        this._openCell(adjacentCell); // recursive call.
+                    }, cell);
+            }
+        }
+
+    }
 }
 
 Minesweeper.prototype._forEachCell = function (func) {
@@ -147,11 +259,14 @@ Minesweeper.prototype._forEachCell = function (func) {
     }
 }
 
-Minesweeper.prototype._forEachAdjacentCell = function (func, x, y) {
+Minesweeper.prototype._forEachAdjacentCell = function (func, cell) {
+
+    var x = cell._position.x;
+    var y = cell._position.y;
 
     for (var i = Math.max(x - 1, 0) ; i <= Math.min(x + 1, this._fieldSize - 1) ; i++) {
         for (var j = Math.max(y - 1, 0) ; j <= Math.min(y + 1, this._fieldSize - 1) ; j++) {
-            var canBeStopped = func.call(this, i, j);
+            var canBeStopped = func.call(this, this._gameField[i][j]);
             if (canBeStopped) {
                 return;
             }
@@ -159,174 +274,95 @@ Minesweeper.prototype._forEachAdjacentCell = function (func, x, y) {
     }
 }
 
-Minesweeper.prototype.openCell = function (x, y) {
-    /*
-    if (this.state === GameState.READY)
-        this.state = GameState.RUNNING;
+/*
+ * Checks whether there are closed cells or cells which incorrectly marked as bomb. 
+ * If such cells cannot be found, sets all bombs as DEFUSED and game state as WIN. 
+ */
+Minesweeper.prototype._setWinIfNeeded = function () {    
 
-    if (this.state !== GameState.RUNNING)
-        return;
-    */
+    var win = true;
 
-    var cell = this._gameField[x][y];
-    var stateChanged = cell.openOrDetonate();
-    if (stateChanged) {
-        if (this.state === GameState.READY)
-            this.state === GameState.RUNNING;
-
-        this.notifyCellStateChanged(x, y);
-
-        if (cell.state === CellState.DETONATED) {
-            // Cell is bomb: Open all cells, detonate all bombs. A player is LooOoOooOseEeEeer!
-            this._forEachCell(
-                function(cell, i, j) {
-                    if (cell.openOrDetonate()) {
-                        this.notifyCellStateChanged(i, j);
-                    }
-                });
-            this.state = GameState.LOSING;
-        } else {
-            if (!this._getNumberAdjacentBombs(x, y)) {
-
-                this._forEachAdjacentCell(
-                    function(i, j) {
-                         this.openCell(i, j);
-                    }, x, y);
-
-            }
-
-            // Check whether there are closed cells or cells which mistakenly marked as bomb, if no, set all bombs as DEFUSED. A user won :(...
-            // this.state = GameState.LOSING;
-            var win = true;
-
-            this._forEachCell (
-                function (cell, i, j) {
-                    if (cell.state === CellState.CLOSED || (cell.state === CellState.MARKED_AS_BOMB && !cell.isBomb)) {
-                        win = false;
-                        return true;
-                    }
-                    return false;
-                } );
-
-            if (win) {
-                this._forEachCell (
-                    function(cell, i, j) {
-                        if (cell.openOrDefuse()) {
-                            this.notifyCellStateChanged(i, j);
-                        }
-                    });
-
-                this.state = GameState.WIN;
-            }
-
-        }
-
-    }
-}
-
-Minesweeper.prototype.toggleCellBombMark = function (x, y) {
-
-    var stateChanged = this._gameField[x][y].toggleBombMark();
-
-    if (stateChanged) {
-
-        this.notifyCellStateChanged(x, y);
-
-        var win = true;
-        for (var i = 0; i < this._fieldSize; i++) {
-            for (var j = 0; j < this._fieldSize; j++) {
-                var cell = this._gameField[i][j];
+    this._forEachCell(
+            function (cell) {
                 if (cell.state === CellState.CLOSED || (cell.state === CellState.MARKED_AS_BOMB && !cell.isBomb)) {
+                    // A closed cell or a cell incorrectly marked as bomb means that game is not won.
                     win = false;
+                    // A loop over all cells can be broken now. 
+                    return true; 
                 }
+                return false;
             }
-        }
+        );
 
-        if (win) {
-            for (var i = 0; i < this._fieldSize; i++) {
-                for (var j = 0; j < this._fieldSize; j++) {
-                    if (this._gameField[i][j].openOrDefuse()) {
-                        this.notifyCellStateChanged(i, j);
+    if (win) {
+        this._forEachCell(
+                function (cell) {
+                    if (cell.openOrDefuse()) {
+                        this._notifyCellStateChanged(cell);
                     }
                 }
-            }
-            this.state = GameState.WIN;
-        }
-    }
+            );
+        // Game over. A player is winner.
+        this._setGameState(GameState.WIN);
+    }    
 }
 
-Minesweeper.prototype.notifyCellStateChanged = function (x, y) {
-    if (this.onCellStateChanged)
-        this.onCellStateChanged(x, y, this.getCellData(x, y));
+Minesweeper.prototype._setLoss = function () {
+    // There is a bomb in this cell and a bomb is detonated. Open all cells, detonate all bombs. 
+    this._forEachCell(
+        function (paramCell) {
+            if (paramCell.openOrDetonate()) {
+                this._notifyCellStateChanged(paramCell);
+            }
+        });
+    // Game over. A player is LooOoOooOseEeEeer!
+    this._setGameState(GameState.LOSS);
+}
+
+Minesweeper.prototype._setGameState = function (newState) {
+    this._state = newState;
+    this._notifyGameStateChanged(this._state);
+}
+
+Minesweeper.prototype._startGameIfNeeded = function () {
+
+    // Run the game if the game is ready.
+    if (this._state === GameState.READY)
+        this._setGameState(GameState.RUNNING);
+
+    return this._state === GameState.RUNNING;
 }
 
 /*
- * Returns a state of (x, y) cell and number of adjacent bombs if a cell is opened.
+ * Returns a state of the specified cell and number of bombs in adjacent cells if the cell is opened.
  */
-Minesweeper.prototype.getCellData = function (x, y) {
-    var state = this._gameField[x][y].state;
-    var numberBombs = state == CellState.OPENED ? this._getNumberAdjacentBombs(x, y) : null;
+Minesweeper.prototype._getCellData = function (cell) {
+    var state = cell.state;
+    var numberBombs = state == CellState.OPENED ? this._getNumberAdjacentBombs(cell) : null;
     return { state: state, numberBombs: numberBombs };
 }
 
-/*
- * Resets all cells and tries to set all bombs.
- */
-Minesweeper.prototype._resetGameField = function (resetCells) {
-
-    if (resetCells) {
-        // Reset all cells on the game field.
-        this._forEachCell(
-            function (cell, i, j) {
-                if (cell.reset()) {
-                    this.notifyCellStateChanged(i, j);
-                }
-            });
-    }
-
-    // Number of bombs which already set.
-    var numberPutBombs = 0;
-
-    // Admissible-Number-Of-Failed-Attempts-To-Put-All-Bombs is the simpliest way to prevent an infinity loop 
-    // due to discrepancy of the game field size and number of bombs which need to be set.
-    // If the code will have to make more attempts to set all bombs than specified number, 
-    // we can assume that it is impossible to set so many bombs on this small game field.
-    // This way is not absolutly correct, but it may not set all bombs only for mindless, not playable values of the game field size and number of bombs.
-    var admissibleNumberFailedAttemptsToPutBomb = this._fieldSize * this._fieldSize;
-    
-    while (numberPutBombs < this._bombNumber && admissibleNumberFailedAttemptsToPutBomb) {
-        // Generate a random (x, y) cell for a next bomb on the game field.
-        var x = Math.floor(Math.random() * this._fieldSize);
-        var y = Math.floor(Math.random() * this._fieldSize);
-        var bombCanBePutHere = true;
-        this._forEachAdjacentCell(
-            function(i, j) {
-                if (this._gameField[i][j].isBomb) {
-                    bombCanBePutHere = false;
-                    return true;
-                }
-            });
-
-        if (bombCanBePutHere) {
-            this._gameField[x][y].isBomb = true;
-            numberPutBombs++;
-        } else {
-            admissibleNumberFailedAttemptsToPutBomb--;
-        }
-    }
-}
-
-Minesweeper.prototype._getNumberAdjacentBombs = function (x, y)
+Minesweeper.prototype._getNumberAdjacentBombs = function (cell)
 {
-    // Assert(!_gameField[x][y].isBomb)
+    // Assert(cell.isBomb)
     var number = 0;
 
     this._forEachAdjacentCell(
-        function (i, j) {
-            if (this._gameField[i][j].isBomb) {
+        function (adjacentCell) {
+            if (adjacentCell.isBomb) {
                 number++;
             }
-        }, x, y);
+        }, cell);
     
     return number;
+}
+
+Minesweeper.prototype._notifyCellStateChanged = function (cell) {
+    if (this.onCellStateChanged)
+        this.onCellStateChanged(cell._position.x, cell._position.y, this._getCellData(cell));
+}
+
+Minesweeper.prototype._notifyGameStateChanged = function () {
+    if (this.onGameStateChanged)
+        this.onGameStateChanged(this._state);
 }
