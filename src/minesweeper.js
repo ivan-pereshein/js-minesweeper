@@ -121,6 +121,7 @@ function Minesweeper(fieldSize, bombNumber) {
     this._fieldSize = fieldSize;
     this._bombNumber = bombNumber;
     this._state = GameState.INITIATED;
+    
     this._gameField = new Array(this._fieldSize);
 
     for (var i = 0; i < this._fieldSize; i++) {
@@ -286,6 +287,7 @@ Minesweeper.prototype._openCell = function (cell) {
             // Assert(cell.state === CellState.OPENED)
 
             // If there is not a bomb around this cell, open all adjacent cells.
+            // All adjacent cells without bombs around should be opened recurcively.
             if (!this._getNumberAdjacentBombs(cell)) {
                 this._forEachAdjacentCell(
                     function (adjacentCell) {
