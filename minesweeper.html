@@ -3,143 +3,18 @@
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
-    <title></title>
-    <script src="Minesweeper.js"></script>
-    <style>
-        .closed_cell {
-            width: 2em;
-            height: 2em;
-            line-height: 2em;
-            vertical-align: middle;
-            text-align: center;
-            text-decoration: none;
-            color: #000;
-            outline: 1px solid #ddd;
-            background: #eee;
-            cursor: pointer;
-        }
-
-            .closed_cell:hover {
-                background: #dcdcdc linear-gradient(#eee, #ddd);
-            }
-
-        .opened_cell {
-            width: 2em;
-            height: 2em;
-            line-height: 2em;
-            vertical-align: middle;
-            text-align: center;
-            text-decoration: none;
-            color: #000;
-            outline: 1px solid #ddd;
-            background: #fff;
-            font-family: Arial;
-            font-weight: bold;
-        }
-
-        .detonated_cell {
-            width: 2em;
-            height: 2em;
-            line-height: 2em;
-            vertical-align: middle;
-            text-align: center;
-            text-decoration: none;
-            color: #000;
-            outline: 1px solid #ddd;
-            background: #fff;
-            background-image: url(content/images/bang24.png);
-            background-repeat: no-repeat;
-            -moz-background-position-x: center;
-            -o-background-position-x: center;
-            background-position-x: center;
-            -moz-background-position-y: center;
-            -o-background-position-y: center;
-            background-position-y: center;
-        }
-
-        .defused_cell {
-            width: 2em;
-            height: 2em;
-            line-height: 2em;
-            vertical-align: middle;
-            text-align: center;
-            text-decoration: none;
-            color: #000;
-            outline: 1px solid #ddd;
-            background: #fff;
-            background-image: url(content/images/bomb24.png);
-            background-repeat: no-repeat;
-            -moz-background-position-x: center;
-            -o-background-position-x: center;
-            background-position-x: center;
-            -moz-background-position-y: center;
-            -o-background-position-y: center;
-            background-position-y: center;
-        }
-
-        .marked_cell {
-            width: 2em;
-            height: 2em;
-            line-height: 2em;
-            vertical-align: middle;
-            text-align: center;
-            text-decoration: none;
-            color: #000;
-            outline: 1px solid #ddd;
-            background: #eee;
-            cursor: pointer;
-            background-image: url(content/images/flag24.png);
-            background-repeat: no-repeat;
-            -moz-background-position-x: center;
-            -o-background-position-x: center;
-            background-position-x: center;
-            -moz-background-position-y: center;
-            -o-background-position-y: center;
-            background-position-y: center;
-        }
-
-            .marked_cell:hover {
-                background: #dcdcdc linear-gradient(#eee, #ddd);
-                background-image: url(content/images/flag24.png);
-                background-repeat: no-repeat;
-                -moz-background-position-x: center;
-                -o-background-position-x: center;
-                background-position-x: center;
-                -moz-background-position-y: center;
-                -o-background-position-y: center;
-                background-position-y: center;
-            }
-
-        #mainContainer {
-            outline: 3px solid #eee;
-            padding: 0 10px 5px 10px
-        }
-
-        #controlsContainer {
-            padding: 5px 0 5px 0;
-        }
-
-        .outer {
-            width: 100%;
-            text-align: center;
-        }
-
-        .inner {
-            display: inline-block;
-            text-align: left;
-        }
-
-        #gameState {
-            font-family: Arial Narrow;
-            float: right;            
-        }
-
-    </style>
+    <title>Minesweeper.</title>
+    <script src="src/Minesweeper.js"></script>
+    <link rel="stylesheet" type="text/css" href="content/styles/style.css" />
     <script>
         'use strict';
 
+        function getCellId(x, y) {
+            return 'cellX' + x + 'Y' + y;
+        }
+
         function cellStateChanged(x, y, data) {
-            var cell = document.getElementById('cellX' + x + 'Y' + y);
+            var cell = document.getElementById(getCellId(x, y));
 
             switch (data.state) {
                 case CellState.OPENED:
@@ -153,8 +28,8 @@
                 case CellState.DETONATED:
                     cell.className = 'detonated_cell';
                     break;
-                case CellState.CLOSED:
-                    cell.className = 'closed_cell';
+                case CellState.INITIAL:
+                    cell.className = 'initial_cell';
                     cell.textContent = '';
                     break;
                 case CellState.MARKED_AS_BOMB:
@@ -169,10 +44,10 @@
             var gameState = document.getElementById('gameState');
             switch (newState) {
                 case GameState.READY:
-                    gameState.textContent = 'Ready to go';
+                    gameState.textContent = 'Ready to go.';
                     break;
                 case GameState.RUNNING:
-                    gameState.textContent = '';
+                    gameState.textContent = '...Tick-tock...';
                     break;
                 case GameState.LOSS:
                     gameState.textContent = 'You are Loooser!';
@@ -184,7 +59,7 @@
             }
         }
 
-        function generateGameField(minesweeper, parent, size) {
+        function generateGameField(minesweeper, parentElement, size) {
 
             function callFuncAndReturnFalse(func) {
                 func();
@@ -201,15 +76,15 @@
 
                     var cell = row.insertCell();
 
-                    cell.id = "cellX" + i + 'Y' + j;
-                    cell.className = "closed_cell";
+                    cell.id = getCellId(i, j);
+                    cell.className = "initial_cell";
                     cell.onclick = Minesweeper.prototype.openCell.bind(minesweeper, i, j);
                     // Event action should return False for disabling the context menu.
                     cell.oncontextmenu = callFuncAndReturnFalse.bind(null, Minesweeper.prototype.toggleCellBombMark.bind(minesweeper, i, j));
                 }
             }
 
-            parent.appendChild(table);
+            parentElement.appendChild(table);
         }
 
         function newGame() {
@@ -221,10 +96,10 @@
             var minesweeper = new Minesweeper(fieldSize, bombNumber);
             minesweeper.onGameStateChanged = gameStateChanged;
             minesweeper.onCellStateChanged = cellStateChanged;
-            minesweeper.startGame();
+            gameStateChanged(minesweeper.state);
 
             var buttonRestart = document.getElementById('restart');
-            buttonRestart.onclick = Minesweeper.prototype.startGame.bind(minesweeper);
+            buttonRestart.onclick = Minesweeper.prototype.restartGame.bind(minesweeper);
 
             var container = document.getElementById('minesweeper');
             container.innerHTML = "";
@@ -238,16 +113,17 @@
     <div id="mainContainer" class="inner">
         <div id="controlsContainer">
             <select id="sizeSelector" onchange="newGame();">
+                <option value="10;2" selected>Easy game</option>
                 <option value="10;15" selected>Small size</option>
                 <option value="20;50">Middle size</option>
                 <option value="30;100">Big size</option>
-                <option value="100;1000">Huge size</option>
-                <option value="20;300">A lot of bombs</option>
+                <option value="75;750">Extra big size</option>
+                <option value="20;300">Hard game</option>
             </select>
             <input type="button" value="Restart" id="restart"/>
             <span id="gameState"></span>
         </div>
-        <div id="minesweeper" class="inner"></div>
+        <div id="minesweeper"></div>
     </div>
 </div>
 

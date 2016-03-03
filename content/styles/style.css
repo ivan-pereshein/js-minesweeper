@@ -1,0 +1,127 @@
+﻿.initial_cell {
+    width: 2em;
+    height: 2em;
+    line-height: 2em;
+    vertical-align: middle;
+    text-align: center;
+    text-decoration: none;
+    color: #000;
+    outline: 1px solid #ddd;
+    background: #eee;
+    cursor: pointer;
+}
+
+    .initial_cell:hover {
+        background: #dcdcdc linear-gradient(#eee, #ddd);
+    }
+
+.opened_cell {
+    width: 2em;
+    height: 2em;
+    line-height: 2em;
+    vertical-align: middle;
+    text-align: center;
+    text-decoration: none;
+    color: #000;
+    outline: 1px solid #ddd;
+    background: #fff;
+    font-family: Arial;
+    font-weight: bold;
+}
+
+.detonated_cell {
+    width: 2em;
+    height: 2em;
+    line-height: 2em;
+    vertical-align: middle;
+    text-align: center;
+    text-decoration: none;
+    color: #000;
+    outline: 1px solid #ddd;
+    background: #fff;
+    background-image: url(../images/bang24.png);
+    background-repeat: no-repeat;
+    -moz-background-position-x: center;
+    -o-background-position-x: center;
+    background-position-x: center;
+    -moz-background-position-y: center;
+    -o-background-position-y: center;
+    background-position-y: center;
+}
+
+.defused_cell {
+    width: 2em;
+    height: 2em;
+    line-height: 2em;
+    vertical-align: middle;
+    text-align: center;
+    text-decoration: none;
+    color: #000;
+    outline: 1px solid #ddd;
+    background: #fff;
+    background-image: url(../images/bomb24.png);
+    background-repeat: no-repeat;
+    -moz-background-position-x: center;
+    -o-background-position-x: center;
+    background-position-x: center;
+    -moz-background-position-y: center;
+    -o-background-position-y: center;
+    background-position-y: center;
+}
+
+.marked_cell {
+    width: 2em;
+    height: 2em;
+    line-height: 2em;
+    vertical-align: middle;
+    text-align: center;
+    text-decoration: none;
+    color: #000;
+    outline: 1px solid #ddd;
+    background: #eee;
+    cursor: pointer;
+    background-image: url(../images/flag24.png);
+    background-repeat: no-repeat;
+    -moz-background-position-x: center;
+    -o-background-position-x: center;
+    background-position-x: center;
+    -moz-background-position-y: center;
+    -o-background-position-y: center;
+    background-position-y: center;
+}
+
+    .marked_cell:hover {
+        background: #dcdcdc linear-gradient(#eee, #ddd);
+        background-image: url(../images/flag24.png);
+        background-repeat: no-repeat;
+        -moz-background-position-x: center;
+        -o-background-position-x: center;
+        background-position-x: center;
+        -moz-background-position-y: center;
+        -o-background-position-y: center;
+        background-position-y: center;
+    }
+
+.outer {
+    width: 100%;
+    text-align: center;
+}
+
+.inner {
+    display: inline-block;
+    text-align: left;
+}
+
+#mainContainer {
+    outline: 3px solid #eee;
+    padding: 0 10px 5px 10px
+}
+
+#controlsContainer {
+    padding: 5px 0 5px 0;
+}
+
+#gameState {
+    font-family: Arial Narrow;
+    float: right;            
+}}
