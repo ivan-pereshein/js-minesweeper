@@ -1,0 +1,143 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Minesweeper</title>
+    <script src="src/states.js"></script>
+    <script src="src/cell.js"></script>
+    <script src="src/minesweeper.js"></script>
+    <link rel="stylesheet" type="text/css" href="content/styles/style.css" />
+    <script>
+        'use strict';
+
+        function getCellId(x, y) {
+            return 'cellX' + x + 'Y' + y;
+        }
+
+        function cellStateChanged(x, y, data) {
+
+            var cell = document.getElementById(getCellId(x, y));
+
+            switch (data.state) {
+                case CellState.OPENED:
+                    cell.className = 'opened_cell';
+                    if (data.numberBombs)
+                        cell.textContent = data.numberBombs;
+                    break;
+                case CellState.DEFUSED:
+                    cell.className = 'defused_cell';
+                    break;
+                case CellState.DETONATED:
+                    cell.className = 'detonated_cell';
+                    break;
+                case CellState.INITIAL:
+                    cell.className = 'initial_cell';
+                    cell.textContent = '';
+                    break;
+                case CellState.MARKED_AS_BOMB:
+                    cell.className = 'marked_cell';
+                    break;
+
+                default:
+            }
+        };
+
+        function gameStateChanged(newState) {
+
+            var gameStateElement = document.getElementById('gameState');
+
+            switch (newState) {
+                case GameState.READY:
+                    gameStateElement.textContent = 'Ready to go.';
+                    break;
+                case GameState.RUNNING:
+                    // TODO: Run timer.
+                    gameStateElement.textContent = '...Tick-tock...';
+                    break;
+                case GameState.LOSS:
+                    // TODO: Stop timer.
+                    gameStateElement.textContent = 'You are Loooser!';
+                    break;
+                case GameState.WIN:
+                    // TODO: Stop timer. Print winner's time.
+                    gameStateElement.textContent = 'You won.';
+                    break;
+                default:
+            }
+        }
+
+        function generateGameField(minesweeper, parentElement, size) {
+
+            function callFuncAndReturnFalse(func) {
+                func();
+                return false;
+            }
+
+            var table = document.createElement('table');
+
+            for (var i = 0; i < size; i++) {
+
+                var row = table.insertRow();
+
+                for (var j = 0; j < size; j++) {
+
+                    var cell = row.insertCell();
+
+                    cell.id = getCellId(i, j);
+                    cell.className = "initial_cell";
+                    cell.onclick = Minesweeper.prototype.openCell.bind(minesweeper, i, j);
+                    // Event action should return False for disabling the context menu.
+                    cell.oncontextmenu = callFuncAndReturnFalse.bind(null, Minesweeper.prototype.toggleCellBombMark.bind(minesweeper, i, j));
+                }
+            }
+
+            parentElement.appendChild(table);
+        }
+
+        function newGame() {
+
+            var minesweeperContainer = document.getElementById('minesweeper');
+            var gameTypeSelector = document.getElementById('gameType');
+            var restartButton = document.getElementById('restart');
+
+            var params = gameTypeSelector.options[gameTypeSelector.selectedIndex].value.split(';');
+            var fieldSize = +params[0];
+            var bombNumber = +params[1];
+
+            var minesweeper = new Minesweeper(fieldSize, bombNumber);
+            minesweeper.onGameStateChanged = gameStateChanged;
+            minesweeper.onCellStateChanged = cellStateChanged;
+
+            // Call to print an actual game's state.
+            gameStateChanged(minesweeper.state);
+
+            restartButton.onclick = Minesweeper.prototype.restartGame.bind(minesweeper);
+
+            minesweeperContainer.innerHTML = "";
+            generateGameField(minesweeper, minesweeperContainer, fieldSize);
+        }
+    </script>
+</head>
+<body onload="newGame();">
+
+<div class="outer">
+    <div id="mainContainer" class="inner">
+        <div id="controlsContainer">
+            <select id="gameType" onchange="newGame();">
+                <option value="10;2">Easy game</option>
+                <option value="10;15" selected>Small size</option>
+                <option value="20;50">Middle size</option>
+                <option value="30;100">Big size</option>
+                <option value="75;750">Extra big size</option>
+                <option value="20;300">Hard game</option>
+            </select>
+            <input type="button" value="Restart" id="restart"/>
+            <span id="gameState"></span>
+        </div>
+        <div id="minesweeper"></div>
+    </div>
+</div>
+
+</body>
+</html>
