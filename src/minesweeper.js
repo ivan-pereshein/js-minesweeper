@@ -293,7 +293,6 @@ Minesweeper.prototype._openCell = function (cell) {
                     }, cell);
             }
         }
-
     }
 }
 

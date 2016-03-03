@@ -47,12 +47,15 @@
                     gameState.textContent = 'Ready to go.';
                     break;
                 case GameState.RUNNING:
+                    // TODO: Run timer.
                     gameState.textContent = '...Tick-tock...';
                     break;
                 case GameState.LOSS:
+                    // TODO: Stop timer.
                     gameState.textContent = 'You are Loooser!';
                     break;
                 case GameState.WIN:
+                    // TODO: Stop timer. Print winner's time.
                     gameState.textContent = 'You won.';
                     break;
                 default:
